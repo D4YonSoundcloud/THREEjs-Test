@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<style>
+    body{
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    canvas {
+        display: block;
+    }
+    #info {
+        position: absolute;
+        top: 50%;
+        width: 100%;
+        height: 5%;
+        text-align: center;
+        z-index: 100;
+        display:block;
+        color: white;
+        font-size: 25px;
+        opacity: 0;
+        transition: 3s ease;
+    }
+    #info.fade-in{
+        opacity: 100%;
+    }
+    #start{
+        position: absolute;
+        top: 10px;
+        width: 5%;
+        height: 2%;
+        text-align: center;
+        z-index: 100;
+        display:block;
+        color: black;
+    }
+    #stop{
+        position: absolute;
+        top: 10px;
+        left: 5%;
+        width: 5%;
+        height: 2%;
+        text-align: center;
+        z-index: 100;
+        display:block;
+        color: black;
+    }
+
+</style>
+
+
+<body>
+<div id="info">REDMETERS</div>
+<button id="start">start</button>
+<button id="stop">stop</button>
+<script src="./three.js"></script>
+<script type="text/javascript" src="./dat.gui/build/dat.gui.min.js"></script>
+<script>
+	const gui = new dat.GUI();
+	class FogGUIHelper {
+		constructor(fog, backgroundColor) {
+			this.fog = fog;
+			this.backgroundColor = backgroundColor;
+		}
+		get near() {
+			return this.fog.near;
+		}
+		set near(v) {
+			this.fog.near = v;
+			this.fog.far = Math.max(this.fog.far, v);
+		}
+		get far() {
+			return this.fog.far;
+		}
+		set far(v) {
+			this.fog.far = v;
+			this.fog.near = Math.min(this.fog.near, v);
+		}
+		get color() {
+			return `#${this.fog.color.getHexString()}`;
+		}
+		set color(hexString) {
+			this.fog.color.set(hexString);
+			this.backgroundColor.set(hexString);
+		}
+	}
+
+	class ColorPicker {
+		constructor(backgroundColor) {
+			this.backgroundColor = backgroundColor
+        }
+		get color() {
+			return `#${this.backgroundColor.getHexString()}`;
+		}
+		set color(hexString) {
+			this.backgroundColor.set(hexString);
+		}
+    }
+
+    setTimeout(() => {
+    	document.getElementById('info').classList.add('fade-in');
+    	console.log(camera.position.z);
+    }, 13000)
+
+    // (x,y,z)
+    let stopAnimationId;
+
+	let near = 10;
+	let far = 60;
+	let dimensions = {
+		width: 1,
+		height: 1,
+		depth: 1,
+	}
+    let scene = new THREE.Scene();
+	let lightColor = 0xFFFFFF;
+	let intensity = 1;
+	let light = new THREE.DirectionalLight(lightColor, intensity);
+	let light2 = new THREE.DirectionalLight(lightColor, intensity);
+	light.position.set(-1,0,4)
+	scene.add(light);
+    scene.background = new THREE.Color( 0x000000 );
+    scene.fog = new THREE.Fog( 0x000000, near, far );
+    let camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set( 0, 0, 75 );
+    camera.lookAt( 0, 0, 0 );
+
+
+    const fogGUIHelper = new FogGUIHelper(scene.fog, scene.background);
+    gui.add(fogGUIHelper, 'near', near, far).listen();
+    gui.add(fogGUIHelper, 'far', near, 100).listen();
+    gui.add(dimensions, 'width', 0.5, 10).listen();
+    gui.add(dimensions, 'height', 0.5, 10).listen();
+    gui.add(dimensions, 'depth', 0.5, 10).listen();
+    gui.addColor(fogGUIHelper, 'color');
+
+    let renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild( renderer.domElement )
+
+
+    let geometry = new THREE.BoxGeometry(dimensions.width, dimensions.height, dimensions.depth);
+    let material = new THREE.MeshPhongMaterial({color: '#ff0000'});
+    let cube = new THREE.Mesh(geometry, material);
+    let cube2 = new THREE.Mesh(geometry, material);
+
+    //cone geometry
+    let cGeometry = new THREE.ConeBufferGeometry(0.5,2,3);
+
+    let makeInstance = (geometry, color, x, z, y) => {
+    	const material = new THREE.MeshPhongMaterial({color})
+        const cube = new THREE.Mesh(geometry, material);
+        scene.add(cube);
+    	cube.position.x = x;
+    	cube.position.z = z;
+    	cube.position.y = y;
+    	return cube;
+    }
+
+    let makeCone = (geometry, color, x, z, y ) => {
+	    const material = new THREE.MeshPhongMaterial({color})
+	    const cone = new THREE.Mesh(geometry, material);
+	    scene.add(cone);
+	    cone.position.x = x;
+	    cone.position.z = z;
+	    cone.position.y = y;
+	    return cone;
+    }
+
+    let cubes = []
+    let cones = []
+
+    for(let i = -10; i < 10; i++){
+    	cubes.push(makeInstance(geometry, '#ff0000', (i+1) * 2, 2, i*1.5))
+    	cones.push(makeCone(cGeometry, '#ffffff', i*2, -2, i*1.5))
+    }
+
+
+    let lines = {}
+
+    const create2dSquare = (stagger) => {
+	    let lineMaterial = new THREE.LineBasicMaterial({color: '#ff0000'});
+	    let points = [];
+	    points.push(new THREE.Vector3(-15 ,0, 0));
+	    points.push(new THREE.Vector3(0 ,15 ,0));
+	    points.push(new THREE.Vector3(15 ,0 ,0));
+	    points.push(new THREE.Vector3(0 , -15 ,0));
+	    points.push(new THREE.Vector3(-15 ,0 ,0));
+	    let lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
+
+	    let line = new THREE.Line(lineGeometry, lineMaterial);
+        line.position.x = stagger - 9;
+
+        lines[stagger] = line;
+
+	    scene.add(line);
+    }
+
+    for(let i = 0; i < 20; i++){
+        create2dSquare(i);
+    }
+
+
+
+
+    scene.add(cube);
+    scene.add(cube2);
+
+    const rotateCube = (cube, rotationX, rotationY) => {
+    	cube.rotation.x += rotationX;
+        cube.rotation.y += rotationY;
+    }
+    // camera.position.z = 5;
+
+    document.getElementById('start').addEventListener('click', () => {
+    	stopAnimationId = requestAnimationFrame(animate)
+    })
+    document.getElementById('stop').addEventListener('click', () => {
+    	console.log('bruh', stopAnimationId);
+    	cancelAnimationFrame(stopAnimationId);
+    })
+
+
+    let loader = new THREE.FontLoader();
+
+    loader.load( 'fonts/Roboto Medium_Regular.json', function ( font ) {
+	    let color = 0x006699;
+	    let geometry = new THREE.TextGeometry( 'Hello three.js!', {
+		    font: font,
+		    size: 80,
+		    height: 5,
+		    curveSegments: 12,
+		    bevelEnabled: true,
+		    bevelThickness: 10,
+		    bevelSize: 8,
+		    bevelOffset: 0,
+		    bevelSegments: 5,
+		    color: color,
+	    } );
+
+	    scene.add(geometry)
+    } );
+
+	let radiusTop =  0.25;
+	let radiusBottom =  0.25;
+	let height = 1;
+	let radialSegments = 6;
+	const redMeterGeometry = new THREE.CylinderBufferGeometry(radiusTop, radiusBottom, height, radialSegments)
+	let redMeterMaterial = new THREE.MeshPhongMaterial({color: '#ff0000'});
+    let redMeter = new THREE.Mesh(redMeterGeometry, redMeterMaterial)
+	redMeter.position.z = -5;
+	redMeter.position.x = -2;
+
+	let laterGeometry = new THREE.BoxGeometry(dimensions.width, dimensions.height, dimensions.depth);
+	let laterMaterial = new THREE.MeshPhongMaterial({color: '#ff0000'});
+	let laterCube = new THREE.Mesh(laterGeometry, laterMaterial);
+	laterCube.position.z = -10;
+
+	let outlineMaterial = new THREE.MeshBasicMaterial( { color: '#231e1e', side: THREE.BackSide } );
+	let outlineMesh = new THREE.Mesh( redMeterGeometry, outlineMaterial );
+	outlineMesh.position = redMeter.position;
+	outlineMesh.scale.multiplyScalar(1.05);
+	outlineMesh.position.z = -5;
+	outlineMesh.position.x = -2;
+
+	let radius = 7;
+	let widthSegments = 12;
+	let heightSegments = 8;
+	let phiStart = Math.PI * 2.00;
+	let phiLength = Math.PI * 2.00;
+	let thetaStart = Math.PI * 0.03;
+	let thetaLength = Math.PI * 0.98;
+	const sphere = new THREE.SphereGeometry(
+		radius,
+		widthSegments, heightSegments,
+		phiStart, phiLength,
+		thetaStart, thetaLength);
+	let sphereMesh = new THREE.Mesh(sphere, laterMaterial);
+	// scene.add(sphereMesh);
+
+
+
+    let animate = () => {
+	    cube.position.x = -5;
+	    cube2.position.x = 5;
+    	stopAnimationId = requestAnimationFrame(animate);
+	    for(let i = 0; i < 20; i++){
+		    lines[i].rotation.z += 0.005;
+	    }
+	    cubes.forEach((cube, index) => {
+	    	rotateCube(cube, 0.01, 0.01);
+	    	cube.position.y += 0.001*index;
+        })
+        cones.forEach((cone, index) => {
+        	rotateCube(cone, 0.01 * index, 0.01 * index);
+	        cone.position.y += 0.001*index;
+        })
+    	rotateCube(cube, 0.01, 0.01);
+    	rotateCube(cube2, -0.01, -0.01);
+    	cube.position.x += 0.01;
+    	cube.position.z += 0.1;
+	    cube2.position.x += 0.01;
+	    cube2.position.z += 0.1;
+        thetaStart += 0.1;
+	    if(camera.position.z >= 0){
+	        camera.position.z -= 0.1;
+        } else {
+	    	scene.add(light2);
+		    scene.add(redMeter);
+		    scene.add(outlineMesh);
+		    light2.position.set(-5, 2 ,-10)
+	    	light.position.set(0, -1, 10);
+		    redMeter.rotation.z = 140;
+		    outlineMesh.rotation.z = 140;
+            rotateCube(redMeter, 0, 0.01);
+            rotateCube(outlineMesh, 0, 0.01);
+	    	// scene.add(laterCube)
+		    // rotateCube(laterCube, 0.01, 0.01);
+	    	// laterCube.position.x = -2;
+        }
+	    light.position.y += 0.001;
+    	renderer.render(scene, camera);
+    }
+
+
+    animate();
+
+
+
+</script>
+</body>
+</html>
