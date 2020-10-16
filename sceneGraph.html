@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<style>
+
+    body{
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    canvas {
+        display: block;
+    }
+    #start{
+        position: absolute;
+        top: 10px;
+        width: 5%;
+        height: 2%;
+        text-align: center;
+        z-index: 100;
+        display:block;
+        color: black;
+    }
+    #stop{
+        position: absolute;
+        top: 10px;
+        left: 5%;
+        width: 5%;
+        height: 2%;
+        text-align: center;
+        z-index: 100;
+        display:block;
+        color: black;
+    }
+
+</style>
+<body>
+<script src="./three.js/build/three.min.js"></script>
+<script src="./three.js/examples/js/controls/OrbitControls.js"></script>
+<script type="text/javascript" src="./dat.gui/build/dat.gui.min.js"></script>
+<script>
+
+	const gui = new dat.GUI();
+
+	class AxisGridHelper {
+		constructor(node, units = 10){
+			let axes = new THREE.AxesHelper();
+			axes.material.depthTest = false;
+			axes.renderOrder = 2 // for after the grid has rendered
+			node.add(axes);
+
+			let grid = new THREE.GridHelper(units, units);
+			grid.material.depthTest = false;
+			grid.renderOrder = 1;
+			node.add(grid);
+
+			this.grid = grid;
+			this.axes = axes;
+			this.visible = false;
+		}
+		get visible() {
+			return this._visible;
+		}
+		set visible(v) {
+			this._visible = v;
+			this.grid.visible = v;
+			this.axes.visible = v;
+		}
+	}
+
+	class DegRadHelper {
+		constructor(obj, prop){
+			this.obj = obj;
+			this.prop = prop;
+		}
+		get value(){
+			return THREE.MathUtils.radToDeg(this.obj[this.prop]);
+		}
+		set value(v){
+			this.obj[this.prop] = THREE.MathUtils.degToRad(v);
+		}
+	}
+	class StringToNumberHelper {
+		constructor(obj, prop){
+			this.obj = obj;
+			this.prop = prop;
+		}
+		get value() {
+			return this.obj[this.prop]
+		}
+		set value(v) {
+			this.obj[this.prop] = parseFloat(v);
+		}
+	}
+
+
+	let time;
+
+	//set scene + lighting
+	let color = 0xFFFFFF;
+	let intensity = 3;
+	let camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000 )
+	let scene = new THREE.Scene()
+	scene.background = new THREE.Color( 0x000000);
+	camera.position.set(0,50,0);
+	camera.up.set(0,0,1);
+	camera.lookAt(0,0,0);
+	let renderer = new THREE.WebGLRenderer();
+	renderer.setSize(window.innerWidth, window.innerHeight);
+	document.body.appendChild( renderer.domElement )
+
+	let light = new THREE.PointLight(color, intensity);
+	scene.add(light)
+
+	let controls = new OrbitControls(camera, canvas);
+	controls.target.set(0,5,0);
+	controls.update();
+
+	let planeSize = 40;
+
+	let loader = new THREE.TextureLoader();
+	let sunTexture = loader.load('./images/sun-texture.png')
+	let sunMaterial = new THREE.MeshBasicMaterial({
+		map: sunTexture,
+	})
+
+	let planeTexture = loader.load('resources/images/checker.png');
+	planeTexture.wrapS = THREE.RepeatWrapping;
+	planeTexture.wrapT = THREE.RepeatWrapping;
+	planeTexture.magFilter = THREE.NearestFilter;
+	let repeats = planeSize / 2;
+	planeTexture.repeat.set(repeats, repeats);
+
+	let planeGeo = new THREE.PlaneBufferGeometry(planeSize, planeSize);
+	let planeMat = new THREE.MeshPhongMaterial({
+		map: planeTexture,
+		side: THREE.DoubleSide,
+	});
+	let mesh = new THREE.Mesh(planeGeo, planeMat);
+	mesh.rotation.x = Math.PI * -.5;
+	scene.add(mesh);
+
+	let wrapNodes = {
+		'ClampToEdgeWrapping': THREE.ClampToEdgeWrapping,
+		'RepeatWrapping': THREE.RepeatWrapping,
+		'MirroredRepeatWrapping': THREE.MirroredRepeatWrapping
+	}
+
+	const updateTexture = () => {
+		sunTexture.needsUpdate = true;
+	}
+
+	setTimeout(() => {
+		gui.add(new StringToNumberHelper(sunTexture, 'wrapS'), 'value', wrapNodes).name('texture.wrapS').onChange(updateTexture);
+		gui.add(new StringToNumberHelper(sunTexture, 'wrapT'), 'value', wrapNodes).name('texture.wrapT').onChange(updateTexture);
+		gui.add(sunTexture.repeat, 'x', 0, 5, 0.1 ).name('sunTexture.repeat.x')
+		gui.add(sunTexture.repeat, 'y', 0, 5, .01).name('sunTexture.repeat.y');
+		gui.add(sunTexture.offset, 'x', -2, 2, .01).name('sunTexture.offset.x');
+		gui.add(sunTexture.offset, 'y', -2, 2, .01).name('sunTexture.offset.y');
+		gui.add(sunTexture.center, 'x', -.5, 1.5, .01).name('sunTexture.center.x');
+		gui.add(sunTexture.center, 'y', -.5, 1.5, .01).name('sunTexture.center.y');
+		gui.add(new DegRadHelper(sunTexture, 'rotation'), 'value', -360, 360).name('sunTexture.rotation');
+	}, 2000)
+
+
+	//set sphere constants
+	let objects = [];
+	let radius = 1;
+	let widthSegments = 6;
+	let heightSegments = 6;
+	let sphereGeometry = new THREE.SphereBufferGeometry(radius, widthSegments, heightSegments)
+
+	//solar system
+	let solarSystem = new THREE.Object3D();
+	scene.add(solarSystem);
+	objects.push(solarSystem);
+
+	//sun
+	let sunMesh = new THREE.Mesh(sphereGeometry, sunMaterial);
+	sunMesh.scale.set(5,5,5);
+	solarSystem.add(sunMesh);
+	objects.push(sunMesh);
+
+	//earth orbit
+	let earthOrbit = new THREE.Object3D();
+	earthOrbit.position.x = 10;
+	solarSystem.add(earthOrbit);
+	objects.push(earthOrbit);
+
+	//earth
+	let earthMaterial = new THREE.MeshPhongMaterial({color: 0x2233FF, emissive: 0x112244});
+	let earthMesh = new THREE.Mesh(sphereGeometry, earthMaterial);
+	earthOrbit.add(earthMesh);
+	objects.push(earthMesh);
+
+	//moon orbit
+	let moonOrbit = new THREE.Object3D();
+	moonOrbit.position.x = 2;
+	earthOrbit.add(moonOrbit);
+
+	//moon
+	let moonMaterial = new THREE.MeshPhongMaterial({color: 0x888888, emissive: 0x222222});
+	let moonMesh = new THREE.Mesh(sphereGeometry, moonMaterial);
+	moonMesh.scale.set(.5,.5,.5);
+	moonOrbit.add(moonMesh);
+	objects.push(moonMesh);
+
+	//axis grid function
+	let makeAxisGrid = (node,label,units) => {
+		let helper = new AxisGridHelper(node, units);
+		gui.add(helper, 'visible').name(label);
+	}
+
+	makeAxisGrid(solarSystem, 'solarSystem', 25);
+	makeAxisGrid(sunMesh, 'sunMesh');
+	makeAxisGrid(earthOrbit, 'earthOrbit');
+	makeAxisGrid(earthMesh, 'earthMesh');
+	makeAxisGrid(moonOrbit, 'moonOrbit');
+	makeAxisGrid(moonMesh, 'moonMesh');
+
+
+
+	sunTexture.wrapS = THREE.RepeatWrapping;
+	sunTexture.repeat.y = 0;
+
+	const animate = () =>{
+		time = requestAnimationFrame(animate);
+		objects.forEach((obj) => {
+			obj.rotation.y += 0.01;
+		})
+		if(sunTexture.repeat.y >= 0.5 ){
+			sunTexture.repeat.y -= 0.25
+		} else {
+			sunTexture.repeat.y += 0.001;
+		}
+		sunTexture.repeat.x = 0;
+		// sunTexture.repeat.y += 0.001;
+		renderer.render(scene, camera);
+	}
+
+	animate();
+</script>
+</body>
+</html>

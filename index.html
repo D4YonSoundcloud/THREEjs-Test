@@ -56,7 +56,7 @@
 
 
 <body>
-<div id="info">REDMETERS</div>
+<!--<div id="info">REDMETERS</div>-->
 <button id="start">start</button>
 <button id="stop">stop</button>
 <script src="./three.js"></script>
@@ -227,25 +227,40 @@
     })
 
 
-    let loader = new THREE.FontLoader();
 
-    loader.load( 'fonts/Roboto Medium_Regular.json', function ( font ) {
-	    let color = 0x006699;
-	    let geometry = new THREE.TextGeometry( 'Hello three.js!', {
-		    font: font,
-		    size: 80,
-		    height: 5,
-		    curveSegments: 12,
-		    bevelEnabled: true,
-		    bevelThickness: 10,
-		    bevelSize: 8,
-		    bevelOffset: 0,
-		    bevelSegments: 5,
-		    color: color,
-	    } );
+	const loader = new THREE.FontLoader();
+	// promisify font loading
+	function loadFont(url) {
+		return new Promise((resolve, reject) => {
+			loader.load(url, resolve, undefined, reject);
+		});
+	}
+	async function doIt() {
+		const font = await loadFont('./fonts/Roboto Medium_Regular.json');
+		const geometry = new THREE.TextBufferGeometry('Red Meters', {
+			font: font,
+			size: 1.0,
+			height: .2,
+			curveSegments: 12,
+			bevelEnabled: false,
+			bevelThickness: 0.1,
+			bevelSize: .1,
+			bevelSegments: 1,
+		});
+		const mesh = new THREE.Mesh(geometry, laterMaterial);
+		geometry.computeBoundingBox();
+		geometry.boundingBox.getCenter(mesh.position).multiplyScalar(-1);
 
-	    scene.add(geometry)
-    } );
+		const parent = new THREE.Object3D();
+		parent.add(mesh);
+
+		parent.position.z = -12;
+		parent.position.x = 1;
+		scene.add(parent);
+	}
+	doIt();
+
+
 
 	let radiusTop =  0.25;
 	let radiusBottom =  0.25;
@@ -269,22 +284,39 @@
 	outlineMesh.position.z = -5;
 	outlineMesh.position.x = -2;
 
-	let radius = 7;
-	let widthSegments = 12;
-	let heightSegments = 8;
-	let phiStart = Math.PI * 2.00;
-	let phiLength = Math.PI * 2.00;
-	let thetaStart = Math.PI * 0.03;
-	let thetaLength = Math.PI * 0.98;
-	const sphere = new THREE.SphereGeometry(
-		radius,
-		widthSegments, heightSegments,
-		phiStart, phiLength,
-		thetaStart, thetaLength);
-	let sphereMesh = new THREE.Mesh(sphere, laterMaterial);
+	// let radius = 7;
+	// let widthSegments = 12;
+	// let heightSegments = 8;
+	// let phiStart = Math.PI * 2.00;
+	// let phiLength = Math.PI * 2.00;
+	// let thetaStart = Math.PI * 0.03;
+	// let thetaLength = Math.PI * 0.98;
+	// const sphere = new THREE.SphereGeometry(
+	// 	radius,
+	// 	widthSegments, heightSegments,
+	// 	phiStart, phiLength,
+	// 	thetaStart, thetaLength);
+	// let sphereMesh = new THREE.Mesh(sphere, laterMaterial);
 	// scene.add(sphereMesh);
 
+	const radius =  2.0;
+	const tubeRadius =  1.0;
+	const tRadialSegments = 8;
+	const tubularSegments =  30;
+	const tGeometry = new THREE.TorusBufferGeometry(
+		radius, tubeRadius,
+		tRadialSegments, tubularSegments);
+    let torusMesh = new THREE.Mesh(tGeometry, laterMaterial )
 
+    // scene.add(torusMesh);
+
+	const pMaterial = new THREE.PointsMaterial({
+		color: 'white',
+		size: 0.2,
+	});
+	const points = new THREE.Points(tGeometry, pMaterial);
+
+	scene.add(points);
 
     let animate = () => {
 	    cube.position.x = -5;
@@ -307,19 +339,19 @@
     	cube.position.z += 0.1;
 	    cube2.position.x += 0.01;
 	    cube2.position.z += 0.1;
-        thetaStart += 0.1;
 	    if(camera.position.z >= 0){
 	        camera.position.z -= 0.1;
         } else {
 	    	scene.add(light2);
 		    scene.add(redMeter);
 		    scene.add(outlineMesh);
-		    light2.position.set(-5, 2 ,-10)
+		    light2.position.set(-5, 2 ,-20)
 	    	light.position.set(0, -1, 10);
 		    redMeter.rotation.z = 140;
 		    outlineMesh.rotation.z = 140;
             rotateCube(redMeter, 0, 0.01);
             rotateCube(outlineMesh, 0, 0.01);
+            camera.position.z -= 0.005;
 	    	// scene.add(laterCube)
 		    // rotateCube(laterCube, 0.01, 0.01);
 	    	// laterCube.position.x = -2;
