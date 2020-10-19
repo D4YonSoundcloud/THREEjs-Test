@@ -1,7 +1,8 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
 import Home from '../views/Home.vue'
-
+import Shadow from "../components/Shadow";
+import RedMeter from "../components/RedMeter";
 Vue.use(VueRouter)
 
 const routes = [
@@ -9,6 +10,16 @@ const routes = [
     path: '/',
     name: 'Home',
     component: Home
+  },
+  {
+    path: '/shadow',
+    name: 'shadows',
+    component: Shadow
+  },
+  {
+    path: '/redMeter',
+    name: 'redMeters',
+    component: RedMeter
   },
   // {
   //   path: '/about',

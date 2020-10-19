@@ -2,6 +2,7 @@
   <div class="three-container">
     <button id="start">start</button>
     <button id="stop">stop</button>
+    <button id="shadows" @click="goToShadows()">shadows</button>
   </div>
 </template>
 
@@ -72,14 +73,17 @@
 
     },
     methods:{
-
+      goToShadows(){
+        this.$router.push('/shadow')
+      }
     },
     mounted(){
       let time;
+      let planets = {}
 
       //set scene + lighting
       let color = 0xFFFFFF;
-      let intensity = 3;
+      let intensity = 1;
       let camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000 )
       let scene = new THREE.Scene()
       scene.background = new THREE.Color( 0x000000);
@@ -91,6 +95,8 @@
       document.body.appendChild( renderer.domElement )
 
       let light = new THREE.PointLight(color, intensity);
+      light.distance = 100;
+      light.position.y = 5;
       scene.add(light)
 
         let controls = new OrbitControls(camera, renderer.domElement);
@@ -159,13 +165,11 @@
       //solar system
       let solarSystem = new THREE.Object3D();
       scene.add(solarSystem);
-      objects.push(solarSystem);
+      // objects.push(solarSystem);
       solarSystem.position.y = 5;
 
-      // let astroidBelt = new THREE.Object3D();
-      // astroidBelt.position.x = 40;
-      // solarSystem.add(astroidBelt);
-      //
+      let astroidBelt = new THREE.Object3D();
+      solarSystem.add(astroidBelt);
 
 
       // let astroidBeltGeometry = new THREE.TorusBufferGeometry( 35, 1, 16, 100 );
@@ -180,6 +184,25 @@
       // });
       // const astroids = new THREE.Points(astroidBelt, astroidMaterial);
       // scene.add(astroids);
+      let createAstroids = (radius, widthSegments, heightSegments, astroidBeltRadius) => {
+        for(let i = 0; i < 255; i++){
+          let astroidGeometry = new THREE.SphereBufferGeometry(radius, widthSegments, heightSegments);
+          let astroidMaterial = new THREE.MeshPhongMaterial({color: 'rgb(80,80,80)', emissive: 'rgb(132,132,132)'});
+          let astroid = new THREE.Mesh(astroidGeometry, astroidMaterial)
+          astroid.position.y = astroidBeltRadius * Math.sin(i);
+          astroid.position.x = astroidBeltRadius * Math.cos(i);
+          astroid.position.z = Math.random() < 0.5 ? -Math.floor((Math.random() * 3) + 1) : Math.floor((Math.random() * 3) + 1);
+          astroid.scale.set(Math.random(), Math.random(), Math.random());
+          astroidBelt.add(astroid)
+        }
+      }
+
+      createAstroids(0.2, 2, 2, 35);
+      createAstroids(0.1, 2, 2, 36);
+      createAstroids(0.1, 1, 1 , 37);
+
+
+
 
 
       let AstroidBeltMaterial = new THREE.MeshPhongMaterial({
@@ -187,20 +210,20 @@
           opacity: 0.8,
           transparent: true,
         });
-      const tGeometry = new THREE.TorusBufferGeometry(
-              35, 4, 5, 600 );
-      let torusMesh = new THREE.Mesh(tGeometry, AstroidBeltMaterial )
+      // const tGeometry = new THREE.TorusBufferGeometry(
+      //         35, 4, 5, 600 );
+      // let torusMesh = new THREE.Mesh(tGeometry, AstroidBeltMaterial )
 
       // scene.add(torusMesh);
 
-      const pMaterial = new THREE.PointsMaterial({
-        color: 'white',
-        size: 0.2,
-      });
-      const points = new THREE.Points(tGeometry, pMaterial);
-      points.rotation.x = 80;
-      console.log(points);
-      solarSystem.add(points);
+      // const pMaterial = new THREE.PointsMaterial({
+      //   color: 'white',
+      //   size: 0.2,
+      // });
+      // const points = new THREE.Points(tGeometry, pMaterial);
+      // points.rotation.x = 80;
+      // console.log(points);
+      // solarSystem.add(points);
 
 
       //sun
@@ -214,6 +237,11 @@
       mercuryOrbit.position.x = 6;
       solarSystem.add(mercuryOrbit);
       objects.push(mercuryOrbit);
+      planets['mercury'] = {
+        orbit: mercuryOrbit,
+        radius: 6,
+        speed: 40,
+      };
 
       //mercury
       let mercuryMaterial = new THREE.MeshPhongMaterial({color: 'rgb(106,73,51)', emissive: 'rgb(78,50,30)'});
@@ -227,6 +255,11 @@
       venusOrbit.position.x = 10;
       solarSystem.add(venusOrbit);
       objects.push(venusOrbit);
+      planets['venus'] = {
+        orbit: venusOrbit,
+        radius: 10,
+        speed: 35,
+      }
 
       //venus
       let venusMaterial = new THREE.MeshPhongMaterial({color: 'rgb(28,43,2)', emissive: 'rgb(32,47,1)'});
@@ -240,6 +273,11 @@
       earthOrbit.position.x = 20;
       solarSystem.add(earthOrbit);
       objects.push(earthOrbit);
+      planets['earth'] = {
+        orbit: earthOrbit,
+        radius: 20,
+        speed: 25
+      }
 
       //earth
       let earthMaterial = new THREE.MeshPhongMaterial({color: 0x2233FF, emissive: 0x112244});
@@ -252,6 +290,11 @@
       marsOrbit.position.x = 30;
       solarSystem.add(marsOrbit);
       objects.push(marsOrbit);
+      planets['mars'] = {
+        orbit: marsOrbit,
+        radius: 30,
+        speed: 20
+      }
 
       //mars
       let marsMaterial = new THREE.MeshPhongMaterial({color: 'rgb(170,52,7)', emissive: 'rgb(180,94,31)'});
@@ -260,11 +303,107 @@
       marsOrbit.add(marsMesh);
       objects.push(marsMesh);
 
+      //jupiter orbit
+      let jupiterOrbit = new THREE.Object3D();
+      jupiterOrbit.position.x = 45;
+      solarSystem.add(jupiterOrbit);
+      objects.push(jupiterOrbit);
+      planets['jupiter'] = {
+        orbit: jupiterOrbit,
+        radius: 45,
+        speed: 10,
+      }
+
+      //jupiter
+      let jupiterMaterial = new THREE.MeshPhongMaterial({color: 'rgb(213,92,48)', emissive: 'rgb(85,70,61)'});
+      let jupiterMesh = new THREE.Mesh(sphereGeometry, jupiterMaterial);
+      jupiterMesh.scale.set(2,2,2);
+      jupiterOrbit.add(jupiterMesh);
+      objects.push(jupiterMesh);
+
+      //saturn orbit
+      let saturnOrbit = new THREE.Object3D();
+      saturnOrbit.position.x = 60;
+      solarSystem.add(saturnOrbit);
+      objects.push(saturnOrbit);
+      planets['saturn'] = {
+        orbit: saturnOrbit,
+        radius: 60,
+        speed: 5,
+      }
+
+      //saturn
+      let saturnMaterial = new THREE.MeshPhongMaterial({color: 'rgb(253,206,188)', emissive: 'rgb(68,56,51)'});
+      let saturnMesh = new THREE.Mesh(sphereGeometry, saturnMaterial);
+      saturnMesh.scale.set(1.5,1.5,1.5);
+      saturnOrbit.add(saturnMesh);
+      objects.push(saturnMesh);
+
+      let saturnBeltMaterial = new THREE.MeshPhongMaterial({
+        color: 'rgb(253,206,188)',
+        emissive: 'rgb(135,48,12)',
+        opacity: 0.8,
+        transparent: true,
+      });
+      const tGeometry = new THREE.TorusBufferGeometry(
+              1.5, 0.1, 5, 100 );
+      let torusMesh = new THREE.Mesh(tGeometry, saturnBeltMaterial )
+      saturnMesh.add(torusMesh);
+      const tGeometry2 = new THREE.TorusBufferGeometry(
+              1.75, 0.1, 5, 100 );
+      let torusMesh2 = new THREE.Mesh(tGeometry2, saturnBeltMaterial )
+      saturnMesh.add(torusMesh2);
+      const tGeometry3 = new THREE.TorusBufferGeometry(
+              2, 0.1, 5, 100 );
+      let torusMesh3 = new THREE.Mesh(tGeometry3, saturnBeltMaterial )
+      saturnMesh.add(torusMesh3);
+
+      //uranus orbit
+      let uranusOrbit = new THREE.Object3D();
+      uranusOrbit.position.x = 70;
+      solarSystem.add(uranusOrbit);
+      objects.push(uranusOrbit);
+      planets['uranus'] = {
+        orbit: uranusOrbit,
+        radius: 70,
+        speed: 2,
+      }
+
+      //uranus
+      let uranusMaterial = new THREE.MeshPhongMaterial({color: 'rgb(55,245,240)', emissive: 'rgb(2,64,58)'});
+      let uranusMesh = new THREE.Mesh(sphereGeometry, uranusMaterial);
+      uranusMesh.scale.set(1.1,1.1,1.1);
+      uranusOrbit.add(uranusMesh);
+      objects.push(uranusMesh);
+
+
+      //neptune orbit
+      let neptuneOrbit = new THREE.Object3D();
+      neptuneOrbit.position.x = 80;
+      solarSystem.add(neptuneOrbit);
+      objects.push(neptuneOrbit);
+      planets['neptune'] = {
+        orbit: neptuneOrbit,
+        radius: 80,
+        speed: 1,
+      }
+
+      //neptune
+      let neptuneMaterial = new THREE.MeshPhongMaterial({color: 'rgb(4,145,199)', emissive: 'rgb(1,51,62)'});
+      let neptuneMesh = new THREE.Mesh(sphereGeometry, neptuneMaterial);
+      neptuneMesh.scale.set(1.12,1.12,1.12);
+      neptuneOrbit.add(neptuneMesh);
+      objects.push(neptuneMesh);
 
       //moon orbit
       let moonOrbit = new THREE.Object3D();
       moonOrbit.position.x = 2;
       earthOrbit.add(moonOrbit);
+      planets['moon'] = {
+        orbit: moonOrbit,
+        radius: 2,
+        speed: 1,
+      }
 
       //moon
       let moonMaterial = new THREE.MeshPhongMaterial({color: 0x888888, emissive: 0x222222});
@@ -302,11 +441,23 @@
         cancelAnimationFrame(time);
       })
 
-      const animate = () =>{
+      let orbitAngle = 1;
+
+      const animate = (globalTime) =>{
+        globalTime *= 0.001;
         time = requestAnimationFrame(animate);
         objects.forEach((obj,index) => {
           obj.rotation.y += 0.01/(index+1);
         })
+        console.log(planets);
+        for(let planet in planets){
+          planets[planet].orbit.position.x = planets[planet].radius * Math.cos(orbitAngle + planets[planet].speed);
+          console.log(planets[planet].radius)
+          planets[planet].orbit.position.y = planets[planet].radius * Math.sin(orbitAngle + planets[planet].speed);
+          orbitAngle += 0.01;
+          console.log( planets[planet].orbit.position.x);
+        }
+        astroidBelt.rotation.z += 0.01
         if(sunTexture.repeat.y >= 0.5 ){
           sunTexture.repeat.y -= 0.25
         } else {
@@ -340,6 +491,17 @@
     position: absolute;
     top: 10px;
     left: 5%;
+    width: 5%;
+    height: 2%;
+    text-align: center;
+    z-index: 100;
+    display:block;
+    color: black;
+  }
+  #shadows{
+    position: absolute;
+    top: 10px;
+    left: 10%;
     width: 5%;
     height: 2%;
     text-align: center;
