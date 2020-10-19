@@ -1,6 +1,7 @@
 <template>
   <div class="three-container">
-
+    <button id="start">start</button>
+    <button id="stop">stop</button>
   </div>
 </template>
 
@@ -150,13 +151,57 @@
         }
       }
 
+
+
       createStars(300, 0.1, 5, 5);
+
 
       //solar system
       let solarSystem = new THREE.Object3D();
       scene.add(solarSystem);
       objects.push(solarSystem);
       solarSystem.position.y = 5;
+
+      // let astroidBelt = new THREE.Object3D();
+      // astroidBelt.position.x = 40;
+      // solarSystem.add(astroidBelt);
+      //
+
+
+      // let astroidBeltGeometry = new THREE.TorusBufferGeometry( 35, 1, 16, 100 );
+      //
+      // let astroidBelt = new THREE.Mesh( astroidBeltGeometry, AstroidBeltMaterial );
+      // solarSystem.add( astroidBelt );
+      // astroidBelt.rotation.x = 80
+      //
+      // const astroidMaterial = new THREE.PointsMaterial({
+      //   color: 'white',
+      //   size: 0.2,
+      // });
+      // const astroids = new THREE.Points(astroidBelt, astroidMaterial);
+      // scene.add(astroids);
+
+
+      let AstroidBeltMaterial = new THREE.MeshPhongMaterial({
+          color: 'rgb(255,0,0)',
+          opacity: 0.8,
+          transparent: true,
+        });
+      const tGeometry = new THREE.TorusBufferGeometry(
+              35, 4, 5, 600 );
+      let torusMesh = new THREE.Mesh(tGeometry, AstroidBeltMaterial )
+
+      // scene.add(torusMesh);
+
+      const pMaterial = new THREE.PointsMaterial({
+        color: 'white',
+        size: 0.2,
+      });
+      const points = new THREE.Points(tGeometry, pMaterial);
+      points.rotation.x = 80;
+      console.log(points);
+      solarSystem.add(points);
+
 
       //sun
       let sunMesh = new THREE.Mesh(sphereGeometry, sunMaterial);
@@ -249,6 +294,13 @@
       console.log(sunTexture);
 
 
+      document.getElementById('start').addEventListener('click', () => {
+        time = requestAnimationFrame(animate)
+      })
+      document.getElementById('stop').addEventListener('click', () => {
+        console.log('bruh', time);
+        cancelAnimationFrame(time);
+      })
 
       const animate = () =>{
         time = requestAnimationFrame(animate);
@@ -274,4 +326,25 @@
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
 
+  #start{
+    position: absolute;
+    top: 10px;
+    width: 5%;
+    height: 2%;
+    text-align: center;
+    z-index: 100;
+    display:block;
+    color: black;
+  }
+  #stop{
+    position: absolute;
+    top: 10px;
+    left: 5%;
+    width: 5%;
+    height: 2%;
+    text-align: center;
+    z-index: 100;
+    display:block;
+    color: black;
+  }
 </style>
