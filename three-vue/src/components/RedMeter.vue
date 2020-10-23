@@ -9,10 +9,9 @@
 
 <script>
 	import * as THREE from 'three'
-	import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-	import { SVGObject } from "../../../three.js/examples/jsm/renderers/SVGRenderer";
+	import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
+	import {SVGLoader} from 'three/examples/jsm/loaders/SVGLoader.js'
 	import dat from 'dat.gui'
-    import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js'
 
 
 	const gui = new dat.GUI();
@@ -20,7 +19,8 @@
 	export default {
 		name: 'RedMeter',
 		data(){
-			return({})
+			return {
+            }
 		},
 		methods:{
             goToShadows(){
@@ -30,17 +30,19 @@
 				this.$router.push('/');
 			}
 		},
+        computed:{
+        },
 		mounted(){
 			let globalTime;
 
 			//set scene + lighting
 			let color = 0xFFFFFF;
-			let camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 100 )
+			let camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 120 )
 			let scene = new THREE.Scene()
-			scene.background = new THREE.Color( 'white');
-			camera.position.set(-45,30,20);
+			scene.background = new THREE.Color( 'rgb(230,230,230)');
+			camera.position.set(0,0,40);
 			camera.lookAt(0,0,0);
-			let renderer = new THREE.WebGLRenderer({ antialias: false });
+			let renderer = new THREE.WebGLRenderer({ antialias: true });
 			renderer.setSize(window.innerWidth, window.innerHeight);
 			renderer.physicallyCorrectLights = true;
 			document.body.appendChild( renderer.domElement )
@@ -57,6 +59,19 @@
 			const repeats = planeSize / 2;
 			texture.repeat.set(repeats, repeats);
 
+			let localPlane = new THREE.Plane( new THREE.Vector3( 0.1, 0, -15.5 ), 1 );
+			let localPlane2 = new THREE.Plane( new THREE.Vector3( 0.1, 0, 15.5 ), 1 );
+			let localPlane3 = new THREE.Plane( new THREE.Vector3( 0, -11, 0 ), 0.8 );
+			let localPlane4 = new THREE.Plane( new THREE.Vector3( 0, -5.5, 0 ), 0.8 );
+			let localPlane5 = new THREE.Plane( new THREE.Vector3( 0, -6.5, 0 ), 1 );
+			let globalPlane = new THREE.Plane( new THREE.Vector3( 1, 0, 0 ), 1 );
+			renderer.clippingPlanes = [ localPlane, localPlane2];
+			renderer.localClippingEnabled = true;
+			let clippingMaterial = new THREE.MeshPhongMaterial( {
+				clippingPlanes: [ localPlane ],
+				clipShadows: true
+			} );
+
 			const planeGeo = new THREE.PlaneBufferGeometry(planeSize, planeSize);
 			const planeMat = new THREE.MeshBasicMaterial({
 				map: texture,
@@ -66,64 +81,9 @@
 			const mesh = new THREE.Mesh(planeGeo, planeMat);
 			mesh.rotation.x = Math.PI * -.5;
 			mesh.position.y = -5;
-			scene.add(mesh);
+			// scene.add(mesh);
 			console.log(mesh);
 
-			let loader = new SVGLoader();
-
-			loader.load( require('.././assets/rm_logo_red-24px.svg'), function ( data ) {
-
-				console.log(data.paths);
-				let paths = data.paths;
-                console.log(paths);
-                console.log(paths[0].userData);
-				let group = new THREE.Group();
-				group.scale.multiplyScalar(0.25);
-				group.position.x = -10;
-				group.position.y = 10;
-				group.scale.y *= -1;
-
-				for (let i = 0; i < paths.length; i++) {
-					let fillColor = 'black';
-					if (fillColor !== 'none') {
-						let material = new THREE.MeshBasicMaterial({
-							color: new THREE.Color().setStyle(fillColor),
-							opacity: paths[i].userData.style.fillOpacity,
-							transparent: paths[i].userData.style.fillOpacity < 1,
-							side: THREE.DoubleSide,
-							depthWrite: false,
-						});
-						let shapes = paths[i].toShapes(true);
-						for (let j = 0; j < shapes.length; j++) {
-							let shape = shapes[j];
-							let SVGgeometry = new THREE.ShapeBufferGeometry(shape);
-							let mesh = new THREE.Mesh(SVGgeometry, material);
-							group.add(mesh);
-						}
-					}
-					let strokeColor = path.userData.style.stroke;
-					if (guiData.drawStrokes && strokeColor !== undefined && strokeColor !== 'none') {
-						let material = new THREE.MeshBasicMaterial({
-							color: new THREE.Color().setStyle(strokeColor),
-							opacity: paths[i].userData.style.strokeOpacity,
-							transparent: paths[i].userData.style.strokeOpacity < 1,
-							side: THREE.DoubleSide,
-							depthWrite: false,
-							wireframe: guiData.strokesWireframe
-						});
-						for (let j = 0, jl = path.subPaths.length; j < jl; j++) {
-							let subPath = paths[i].subPaths[j];
-							let SVGgeometry = SVGLoader.pointsToStroke(subPath.getPoints(), path.userData.style);
-							if (SVGgeometry) {
-								let mesh = new THREE.Mesh(SVGgeometry, material);
-								group.add(mesh);
-							}
-						}
-					}
-				}
-				console.log(group);
-				scene.add(group);
-			});
 
 
 			let dIntensity = 2;
@@ -164,9 +124,10 @@
 			let radialSegments =  8;
 			let geometry = new THREE.CylinderBufferGeometry(
 				radiusTop, radiusBottom, height, radialSegments);
-			let redMeterMaterial = new THREE.MeshStandardMaterial({color: 'red',  metalness: 1 / 9, roughness: 1 - 9 / 9});
+			let redMeterMaterial = new THREE.MeshStandardMaterial({color: 'red',  metalness: 1 / 9, roughness: 1 - 9 / 9, clippingPlanes: [localPlane3], side: THREE.DoubleSide,});
+			let redMeter2Material = new THREE.MeshStandardMaterial({color: 'red',  metalness: 1 / 9, roughness: 1 - 9 / 9, clippingPlanes: [localPlane4], side: THREE.DoubleSide,});
 			let redMeterMesh = new THREE.Mesh(geometry, redMeterMaterial);
-			let redMeterMesh2 = new THREE.Mesh(geometry, redMeterMaterial);
+			let redMeterMesh2 = new THREE.Mesh(geometry, redMeter2Material);
 			redMeterMesh.position.y = 5.5;
 			redMeterMesh2.position.y = 4;
 			redMeterMesh.rotation.x = Math.PI * -0.5;
@@ -189,6 +150,8 @@
 			let pipeMaterialSmall = new THREE.MeshStandardMaterial({color: 'rgb(30,30,30)', metalness: 1 / 9, roughness: 1 - 9 / 9});
 			let pipeFront = new THREE.Mesh(pipeGeometry, pipeMaterial);
 			let pipeBack = new THREE.Mesh(pipeGeometry, pipeMaterial);
+			let pipeFrontFront = new THREE.Mesh(pipeGeometrySmallWhite, new THREE.MeshStandardMaterial({color: 'rgb(52,52,52)', metalness: 1 / 9, roughness: 1 - 9 / 9, side: THREE.DoubleSide}));
+			let pipeBackBack = new THREE.Mesh(pipeGeometrySmallWhite, new THREE.MeshStandardMaterial({color: 'rgb(52,52,52)', metalness: 1 / 9, roughness: 1 - 9 / 9, side: THREE.DoubleSide}));
 			let pipeSmallFront = new THREE.Mesh(pipeGeometrySmall, pipeMaterialSmall);
 			let pipeSmallBack = new THREE.Mesh(pipeGeometrySmall, pipeMaterialSmall);
 			let flangeBlackFront = new THREE.Mesh(flangeGeometry, pipeMaterialSmall);
@@ -205,11 +168,17 @@
 			let supportPipeBack = new THREE.Mesh(supportPipeGeometry, pipeMaterial)
 
 			pipeFront.position.y = 4.75;
-			pipeFront.position.z = 7.0
+			pipeFront.position.z = 7.01
 			pipeFront.rotation.x = Math.PI * -0.5;
+			pipeFrontFront.position.y = 4.75;
+			pipeFrontFront.position.z = 15.5
+			pipeFrontFront.rotation.x = Math.PI * -0.5;
 			pipeBack.position.y = 4.75;
-			pipeBack.position.z = -7.0
+			pipeBack.position.z = -7.01
 			pipeBack.rotation.x = Math.PI * -0.5;
+			pipeBackBack.position.y = 4.75;
+			pipeBackBack.position.z = -15.5
+			pipeBackBack.rotation.x = Math.PI * -0.5;
 
 			pipeSmallFront.position.y = 4.75;
 			pipeSmallFront.position.z = 8.5;
@@ -260,6 +229,8 @@
 
 			scene.add(pipeSmallFront);
 			scene.add(pipeSmallBack);
+			scene.add(pipeFrontFront);
+			scene.add(pipeBackBack);
 			scene.add(flangeBlackFront);
 			scene.add(flangeBlackBack);
 			scene.add(flangeWhiteFront);
@@ -581,6 +552,57 @@
 			scene.add(boltBackRightBottomRight);
 			scene.add(boltBackRightBottomRight2);
 
+
+			let pipeSupportBackOne = new THREE.Mesh( createBoxWithRoundedEdges( 1.25, 3.25, 0.1, 0.5 / 9, 16 ), cubeMat );
+			let pipeSupportBackOneTwo = new THREE.Mesh( createBoxWithRoundedEdges( 1.25, 3.25, 0.1, 0.5 / 9, 16 ), cubeMat );
+			let pipeSupportBackOneMiddle = new THREE.Mesh( createBoxWithRoundedEdges( 0.9, 3.25, 1, 0.5 / 9, 16 ), cubeMat );
+			let pipeSupportBackTwo = new THREE.Mesh( createBoxWithRoundedEdges( 1.25, 3.25, 0.1, 0.5 / 9, 16 ), cubeMat );
+			let pipeSupportBackTwoTwo = new THREE.Mesh( createBoxWithRoundedEdges( 1.25, 3.25, 0.1, 0.5 / 9, 16 ), cubeMat );
+			let pipeSupportBackTwoMiddle = new THREE.Mesh( createBoxWithRoundedEdges( 0.9, 3.25, 1, 0.5 / 9, 16 ), cubeMat );
+			let pipeSupportFrontOne = new THREE.Mesh( createBoxWithRoundedEdges( 1.25, 3.25, 0.1, 0.5 / 9, 16 ), cubeMat );
+			let pipeSupportFrontOneTwo = new THREE.Mesh( createBoxWithRoundedEdges( 1.25, 3.25, 0.1, 0.5 / 9, 16 ), cubeMat );
+			let pipeSupportFrontOneMiddle = new THREE.Mesh( createBoxWithRoundedEdges( 0.9, 3.25, 1, 0.5 / 9, 16 ), cubeMat );
+			let pipeSupportFrontTwo = new THREE.Mesh( createBoxWithRoundedEdges( 1.25, 3.25, 0.1, 0.5 / 9, 16 ), cubeMat );
+			let pipeSupportFrontTwoTwo = new THREE.Mesh( createBoxWithRoundedEdges( 1.25, 3.25, 0.1, 0.5 / 9, 16 ), cubeMat );
+			let pipeSupportFrontTwoMiddle = new THREE.Mesh( createBoxWithRoundedEdges( 0.9, 3.25, 1, 0.5 / 9, 16 ), cubeMat );
+			pipeSupportBackOne.position.z = 10.25;
+			pipeSupportBackOne.position.y = 1.75;
+			pipeSupportBackOneTwo.position.z = 11.25;
+			pipeSupportBackOneTwo.position.y = 1.75;
+			pipeSupportBackOneMiddle.position.z = 10.75;
+			pipeSupportBackOneMiddle.position.y = 1.75;
+			pipeSupportBackTwo.position.z = 11.75;
+			pipeSupportBackTwo.position.y = 1.75
+			pipeSupportBackTwoTwo.position.z = 12.75;
+			pipeSupportBackTwoTwo.position.y = 1.75
+			pipeSupportBackTwoMiddle.position.z = 12.25;
+			pipeSupportBackTwoMiddle.position.y = 1.75
+			pipeSupportFrontOne.position.z = -10.25;
+			pipeSupportFrontOne.position.y = 1.75;
+			pipeSupportFrontOneTwo.position.z = -11.25;
+			pipeSupportFrontOneTwo.position.y = 1.75;
+			pipeSupportFrontOneMiddle.position.z = -10.75;
+			pipeSupportFrontOneMiddle.position.y = 1.75;
+			pipeSupportFrontTwo.position.z = -11.75;
+			pipeSupportFrontTwo.position.y = 1.75
+			pipeSupportFrontTwoTwo.position.z = -12.75;
+			pipeSupportFrontTwoTwo.position.y = 1.75
+			pipeSupportFrontTwoMiddle.position.z = -12.25;
+			pipeSupportFrontTwoMiddle.position.y = 1.75
+			scene.add(pipeSupportBackOne);
+			scene.add(pipeSupportBackOneTwo);
+			scene.add(pipeSupportBackOneMiddle);
+			scene.add(pipeSupportBackTwo);
+			scene.add(pipeSupportBackTwoTwo);
+			scene.add(pipeSupportBackTwoMiddle);
+			scene.add(pipeSupportFrontOne);
+			scene.add(pipeSupportFrontOneTwo);
+			scene.add(pipeSupportFrontOneMiddle);
+			scene.add(pipeSupportFrontTwo);
+			scene.add(pipeSupportFrontTwoTwo);
+			scene.add(pipeSupportFrontTwoMiddle);
+
+
 			let redMeterMiddleLeft =  new THREE.Mesh( createBoxWithRoundedEdges( 0.25, 0.4, 12, 0.5 / 9, 16 ), new THREE.MeshStandardMaterial( {
 				color: 'black',
 				metalness: 1 / 9,
@@ -607,17 +629,194 @@
 			let circleMesh2 = new THREE.Mesh(circleGeometry, circleMaterial);
 			circleMesh.position.y = 4.75;
 			circleMesh2.position.y = 4.75;
-			circleMesh.position.z = 6.01;
-			circleMesh2.position.z = -6.01;
+			circleMesh.position.z = 6.02;
+			circleMesh2.position.z = -6.02;
 			circleMesh2.rotation.x = Math.PI * -5;
 
 
+
+			let slurryTextureLoader = new THREE.TextureLoader();
+			let slurryTexture = slurryTextureLoader.load(require('.././assets/water-bumpmap.jpg'));
+
+			let cartridgeTexture = slurryTextureLoader.load(require('.././assets/cartridge-bumpmap.jpg'))
+
+
+
+			let slurryRadius =  2.0;
+			let slurryTubeRadius =  1.0;
+			let slurryRadialSegments = 8;
+			let slurryTubularSegments =  30;
+			let slurryGeometry = new THREE.CylinderGeometry(1, 1, 45, pipeRadialSegments);
+			let slurryMaterial = new THREE.MeshPhongMaterial({color: 'rgb(75,73,73)', bumpMap: slurryTexture})
+			let slurryMesh = new THREE.Mesh(slurryGeometry, slurryMaterial )
+			let slurryMesh2 = new THREE.Mesh(slurryGeometry, slurryMaterial )
+			slurryMesh.position.y = 4.75;
+			slurryMesh.rotation.x = Math.PI * -0.5;
+			slurryMesh2.position.y = 4.75;
+			slurryMesh2.position.z = -45;
+			slurryMesh2.rotation.x = Math.PI * -0.5;
+			let slurryCapGeometry = new THREE.CircleGeometry( 1, 32 );
+			let slurryCapMaterial = new THREE.MeshPhongMaterial({color: 'rgb(75,75,75)', bumpMap: slurryTexture})
+			let slurryCapFront = new THREE.Mesh( slurryCapGeometry, slurryCapMaterial );
+			let slurryCapBack = new THREE.Mesh( slurryCapGeometry, slurryCapMaterial );
+            slurryCapFront.position.z = 15.49;
+			slurryCapFront.position.y = 4.75;
+            slurryCapBack.position.z = -15.49;
+			slurryCapBack.position.y = 4.75;
+			slurryCapBack.rotation.x = Math.PI * -5;
+
+			let redMeterCartridgeGeometry = new THREE.CylinderGeometry(1.1, 1.1, 14, pipeRadialSegments);
+			let redMeterCartridgeMaterial = new THREE.MeshPhongMaterial({color: 'rgb(0,0,0)', clippingPlanes: [localPlane5], side: THREE.DoubleSide, bumpMap: cartridgeTexture})
+			let redMeterCartridge = new THREE.Mesh(redMeterCartridgeGeometry,redMeterCartridgeMaterial)
+			redMeterCartridge.position.y = 4.75;
+			redMeterCartridge.rotation.x = Math.PI * -0.5;
+
+			scene.add( slurryCapFront );
+			scene.add( slurryCapBack );
+            scene.add(redMeterCartridge);
+
+
+			scene.add(slurryMesh);
+			scene.add(slurryMesh2);
 			scene.add(circleMesh);
 			scene.add(circleMesh2);
 
+			const ringInnerRadius =  .99;
+			const ringOuterRadius =  1.51;
+			const thetaSegments = 30;
+			const ringGeometry = new THREE.RingBufferGeometry(
+				ringInnerRadius, ringOuterRadius, thetaSegments);
+			let ringMesh = new THREE.Mesh(ringGeometry,new THREE.MeshStandardMaterial({color: 'rgb(52,52,52)', metalness: 1 / 9, roughness: 1 - 9 / 9, side: THREE.DoubleSide}) )
+			let ringMesh2 = new THREE.Mesh(ringGeometry,new THREE.MeshStandardMaterial({color: 'rgb(52,52,52)', metalness: 1 / 9, roughness: 1 - 9 / 9, side: THREE.DoubleSide}) )
+            ringMesh.position.y = 4.75;
+			ringMesh.position.z = 15.49;
+			ringMesh2.position.y = 4.75;
+			ringMesh2.position.z = -15.49;
+
+			scene.add(ringMesh);
+			scene.add(ringMesh2);
+
+			let cameraAngle = 0.1;
+			let cameraSpeed = 0.005;
+			let cameraHeight = 20.1;
+			let reverseCamera = false;
+			let slurrySpeed = 0.1;
+			let cameraZoom = 40;
+
+			const gui = new dat.GUI();
+			let localFolder = gui.addFolder('Red Meter Vision');
+			let localProps = {
+				get 'Enabled'(){
+					return renderer.localClippingEnabled;
+                },
+                set 'Enabled'(v){
+					renderer.localClippingEnabled = v;
+                },
+                get 'Shadows'(){
+					return redMeterCartridgeMaterial.clipShadows;
+                },
+                set 'Shadows'(v){
+	                redMeterCartridgeMaterial.clipShadows = v;
+                },
+                get 'Red Meter X-Ray'(){
+					return localPlane3.constant;
+                },
+                set 'Red Meter X-Ray'(v){
+					localPlane3.constant = v
+                },
+				get 'Cartridge X-Ray'(){
+					return localPlane5.constant;
+				},
+				set 'Cartridge X-Ray'(v){
+					localPlane5.constant = v
+				},
+				get 'Camera Speed'(){
+					return cameraSpeed;
+				},
+				set 'Camera Speed'(v){
+					cameraSpeed = v
+				},
+				get 'Reverse Camera'(){
+					return reverseCamera;
+				},
+				set 'Reverse Camera'(v){
+					cameraSpeed = cameraSpeed*-1;
+					reverseCamera = v
+				},
+				get 'Camera Height'(){
+					return cameraHeight;
+				},
+				set 'Camera Height'(v){
+					cameraHeight = v
+					camera.lookAt(0,5,0);
+					camera.position.set(cameraZoom*Math.sin(cameraAngle += cameraSpeed), cameraHeight, cameraZoom*Math.cos(cameraAngle += cameraSpeed ));
+				},
+				get 'Camera Zoom'(){
+					return cameraZoom;
+				},
+				set 'Camera Zoom'(v){
+					cameraZoom = v
+                    camera.lookAt(0,5,0);
+					camera.position.set(cameraZoom*Math.sin(cameraAngle += cameraSpeed), cameraHeight, cameraZoom*Math.cos(cameraAngle += cameraSpeed ));
+				},
+				get 'Slurry Speed'(){
+					return slurrySpeed;
+				},
+				set 'Slurry Speed'(v){
+					slurrySpeed = v
+				},
+
+            }
+            localFolder.add(localProps, 'Enabled')
+            localFolder.add(localProps, 'Shadows')
+            localFolder.add(localProps, 'Red Meter X-Ray', 0.44, 0.8);
+            localFolder.add(localProps, 'Cartridge X-Ray', 0.65, 1.00);
+			localFolder.add(localProps, 'Camera Speed', 0.001, 0.02);
+			localFolder.add(localProps, 'Camera Height', -70.0, 70.0);
+			localFolder.add(localProps, 'Camera Zoom', 1, 80);
+			localFolder.add(localProps, 'Reverse Camera');
+			localFolder.add(localProps, 'Slurry Speed', 0.01, 1);
+
+
+			let outlineMaterial = new THREE.MeshStandardMaterial( {color: 'rgb(156,0,0)',  metalness: 1 / 9, roughness: 1 - 9 / 9, side: THREE.BackSide });
+			let outlineMesh = new THREE.Mesh( geometry, outlineMaterial );
+			let outlineMesh2 = new THREE.Mesh( geometry, outlineMaterial );
+			let outlineMesh3 = new THREE.Mesh( redMeterCartridgeGeometry, new THREE.MeshStandardMaterial( {color: 'rgb(30,30,30)',  metalness: 1 / 9, roughness: 1 - 9 / 9, side: THREE.BackSide }) );
+			outlineMesh.position.x = redMeterMesh.position.x;
+			outlineMesh.position.y = redMeterMesh.position.y;
+			outlineMesh.position.z = redMeterMesh.position.z;
+			outlineMesh3.position.x = redMeterCartridge.position.x;
+			outlineMesh3.position.y = redMeterCartridge.position.y;
+			outlineMesh3.position.z = redMeterCartridge.position.z;
+			outlineMesh.scale.multiplyScalar(0.99);
+			outlineMesh3.scale.multiplyScalar(1.05);
+			outlineMesh.rotation.x = Math.PI * -0.5
+			outlineMesh3.rotation.x = Math.PI * -0.5
+			outlineMesh.rotation.y = 89.92
+			outlineMesh3.rotation.y = 89.92
+			scene.add(outlineMesh)
+			scene.add(outlineMesh3)
+
 			const animate = (time) =>{
-				time *= 0.001;
 				globalTime = requestAnimationFrame(animate);
+				// slurryMesh.position.z += time;
+                console.log(time);
+                console.log(slurryMesh.position.z);
+                if(slurryMesh.position.z >= 39){
+                	slurryMesh.position.z = -45;
+                }
+                if(slurryMesh2.position.z >= 39){
+                	slurryMesh2.position.z = -45;
+                }
+                camera.lookAt(0, 5, 0);
+                camera.position.set(cameraZoom*Math.sin(cameraAngle), cameraHeight, cameraZoom*Math.cos(cameraAngle));
+                cameraAngle += cameraSpeed;
+                slurryMesh.position.z += slurrySpeed;
+                slurryMesh.rotation.y += slurrySpeed * 0.1;
+				slurryMesh2.position.z += slurrySpeed;
+				slurryMesh2.rotation.y += slurrySpeed * 0.1;
+				slurryCapFront.rotation.z -= slurrySpeed * 0.3;
+				slurryCapBack.rotation.z -= slurrySpeed * 0.3;
 				renderer.render(scene, camera);
 			}
 
@@ -669,5 +868,18 @@
         z-index: 100;
         display:block;
         color: black;
+    }
+    #localPlane3Slider{
+        width: 10vw;
+        position: absolute;
+        top: 40px;
+        left: 10px;
+        display: block;
+        height: 2%;
+    }
+    .plane-text{
+        position:absolute;
+        top: 40px;
+        left: 10vw;
     }
 </style>
