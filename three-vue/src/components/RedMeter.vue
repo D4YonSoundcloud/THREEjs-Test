@@ -802,11 +802,11 @@
 				// slurryMesh.position.z += time;
                 console.log(time);
                 console.log(slurryMesh.position.z);
-                if(slurryMesh.position.z >= 39){
-                	slurryMesh.position.z = -45;
+                if(slurryMesh.position.z >= 38){
+                	slurryMesh.position.z = -43;
                 }
-                if(slurryMesh2.position.z >= 39){
-                	slurryMesh2.position.z = -45;
+                if(slurryMesh2.position.z >= 38){
+                	slurryMesh2.position.z = -43;
                 }
                 camera.lookAt(0, 5, 0);
                 camera.position.set(cameraZoom*Math.sin(cameraAngle), cameraHeight, cameraZoom*Math.cos(cameraAngle));

@@ -164,24 +164,44 @@
       // });
       // const astroids = new THREE.Points(astroidBelt, astroidMaterial);
       // scene.add(astroids);
+      // var dotGeometry = new THREE.Geometry();
+      // dotGeometry.vertices.push(new THREE.Vector3( 0, 0, 0));
+      // var dotMaterial = new THREE.PointsMaterial( { size: 1, sizeAttenuation: false } );
+      // var dot = new THREE.Points( dotGeometry, dotMaterial );
+      // scene.add( dot );
       let createAstroids = (radius, widthSegments, heightSegments, astroidBeltRadius) => {
-        for(let i = 0; i < 255; i++){
-          let astroidGeometry = new THREE.SphereBufferGeometry(radius, widthSegments, heightSegments);
-          let astroidMaterial = new THREE.MeshPhongMaterial({color: 'rgb(80,80,80)', emissive: 'rgb(132,132,132)'});
-          let astroid = new THREE.Mesh(astroidGeometry, astroidMaterial)
-          astroid.position.y = astroidBeltRadius * Math.sin(i);
-          astroid.position.x = astroidBeltRadius * Math.cos(i);
-          astroid.position.z = Math.random() < 0.5 ? -Math.floor((Math.random() * 3) + 1) : Math.floor((Math.random() * 3) + 1);
-          astroid.scale.set(Math.random(), Math.random(), Math.random());
-          astroidBelt.add(astroid)
+        let gradient = 255;
+        let gradientInterval = 0.5;
+        console.log(gradientInterval)
+        for(let i = 0; i < 180; i+=5){
+          for(let j = 0; j < 360; j+=5) {
+            let astroidGeometry = new THREE.Geometry();
+            astroidGeometry.vertices.push(new THREE.Vector3( 0, 0, 0));
+            console.log(`rgb(${gradient},${gradient},${gradient})`);
+            let astroidMaterial = new THREE.PointsMaterial( { size: 1, sizeAttenuation: false, color: `rgb(${gradient},${gradient},${gradient})`} );
+            let astroid = new THREE.Points(astroidGeometry, astroidMaterial)
+            astroid.position.x = astroidBeltRadius * Math.sin(i) * Math.cos(j);
+            astroid.position.y = astroidBeltRadius * Math.sin(i) * Math.sin(j);
+            astroid.position.z = astroidBeltRadius * Math.cos(i);
+            // let r = Math.round(astroid.position.x+astroidBeltRadius * 2.5)
+            // let g = Math.round(astroid.position.y+astroidBeltRadius * 2.5)
+            // let b = Math.round(astroid.position.z+astroidBeltRadius * 2.5)
+            // astroid.material.color.r = r;
+            // astroid.material.color.g = g;
+            // astroid.material.color.b = b;
+            console.log(astroid.material.color, i);
+            astroidBelt.add(astroid)
+          }
+            gradientInterval += 0.5;
+            gradient = Math.floor(gradient - gradientInterval);
         }
       }
 
-      createAstroids(0.2, 2, 2, 28.53 + 32.91);
-      createAstroids(0.2, 2, 2, 28.53 + 35.71);
-      createAstroids(0.1, 2, 2, 28.53 + 41.51);
-      createAstroids(0.1, 2, 2, 28.53 + 43.51);
-      createAstroids(0.1, 1, 1 , 28.53 + 47.87);
+      createAstroids(0.1, 1, 1, 30);
+      // createAstroids(0.01, 2, 2, 28.53 + 35.71);
+      // createAstroids(0.01, 2, 2, 28.53 + 41.51);
+      // createAstroids(0.01, 2, 2, 28.53 + 43.51);
+      // createAstroids(0.01, 1, 1 , 28.53 + 47.87);
 
 
 
@@ -461,7 +481,7 @@
           planets[planet].angle += planets[planet].speed;
           // planets[planet].orbit.rotation.y += planets[planet].rotationSpeed;
         }
-        astroidBelt.rotation.z += 0.001
+        astroidBelt.rotation.z += 0.01
         if(sunTexture.repeat.y >= 0.5 ){
           sunTexture.repeat.y -= 0.25
         } else {
